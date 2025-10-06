@@ -9,6 +9,8 @@ from skimage import io as skio
 import IPython
 from skimage.transform import rescale
 
+
+#convertir les images en 0..255, utile pour la suite
 def _to_float255(img: np.ndarray) -> np.ndarray:
     """
     Convertit une image RGB en float32 échelle 0..255, sans changer la gamme relative.
@@ -29,6 +31,8 @@ def _to_float255(img: np.ndarray) -> np.ndarray:
     # fallback générique
     return img.astype(np.float32)
 
+
+#LUMINANCE BT.601
 def luminance_bt601(img_rgb: np.ndarray, *, normalize: bool = False) -> np.ndarray:
     """
     Calcule la luminance Y selon ITU-R BT.601 (R,G,B pondérés 0.299/0.587/0.114).
@@ -49,4 +53,79 @@ def luminance_bt601(img_rgb: np.ndarray, *, normalize: bool = False) -> np.ndarr
     return Y.astype(np.float32, copy=False)
 
 im=skio.imread('dataset/ISIC_0000030.jpg')
-print(luminance_bt601(im))
+im_luminance = luminance_bt601(im)
+print(im_luminance)
+
+
+
+
+#LPB P=8, R=1, VERSION NUMPY
+def lbp_p8_r1_numpy(Y: np.ndarray, *, pad_mode: str = "reflect", strict: bool = True) -> np.ndarray:
+    """
+    Calcule les Local Binary Patterns (LBP) pour P=8, R=1 sur une image de luminance Y.
+    - Y : array float/uint (H,W), conseillé float32.
+    - pad_mode : "reflect" recommandé (pas imposé par l'article).
+    - strict : True -> signe '>' (article LC), False -> '>='.
+    Retourne : codes LBP uint8 dans [0..255], shape (H,W).
+    """
+    if Y.ndim != 2:
+        raise ValueError("Y doit être 2D (H, W).")
+    Y = Y.astype(np.float32, copy=False)
+
+    # Pad d'1 pixel pour pouvoir adresser les 8 voisins (choix d'implémentation)
+    Yp = np.pad(Y, 1, mode=pad_mode)
+
+    # Centre
+    C = Yp[1:-1, 1:-1]
+
+    # 8 voisins (ordre: N, NE, E, SE, S, SW, W, NW)
+    N  = Yp[0:-2, 1:-1]
+    NE = Yp[0:-2, 2:  ]
+    E  = Yp[1:-1, 2:  ]
+    SE = Yp[2:  , 2:  ]
+    S  = Yp[2:  , 1:-1]
+    SW = Yp[2:  , 0:-2]
+    W  = Yp[1:-1, 0:-2]
+    NW = Yp[0:-2, 0:-2]
+
+    # Comparaison stricte '>' comme dans s(u)=1[u>0] (article LC)
+    if strict:
+        b0 = (N  > C).astype(np.uint8)
+        b1 = (NE > C).astype(np.uint8)
+        b2 = (E  > C).astype(np.uint8)
+        b3 = (SE > C).astype(np.uint8)
+        b4 = (S  > C).astype(np.uint8)
+        b5 = (SW > C).astype(np.uint8)
+        b6 = (W  > C).astype(np.uint8)
+        b7 = (NW > C).astype(np.uint8)
+    else:  # variante '>=' optionnelle
+        b0 = (N  >= C).astype(np.uint8)
+        b1 = (NE >= C).astype(np.uint8)
+        b2 = (E  >= C).astype(np.uint8)
+        b3 = (SE >= C).astype(np.uint8)
+        b4 = (S  >= C).astype(np.uint8)
+        b5 = (SW >= C).astype(np.uint8)
+        b6 = (W  >= C).astype(np.uint8)
+        b7 = (NW >= C).astype(np.uint8)
+
+    # Assemblage des 8 bits -> code uint8
+    lbp = (b0 << 0) | (b1 << 1) | (b2 << 2) | (b3 << 3) | \
+          (b4 << 4) | (b5 << 5) | (b6 << 6) | (b7 << 7)
+
+    return lbp.astype(np.uint8, copy=False)
+
+
+
+
+
+#VERSION SKIMAGE, IDENTIQUE AU PAPIER 
+def lbp_p8_r1_skimage(Y: np.ndarray) -> np.ndarray:
+    """
+    Requiert scikit-image: pip install scikit-image
+    Utilise local_binary_pattern(P=8, R=1, method='default') -> seuil strict '>'.
+    """
+    from skimage.feature import local_binary_pattern
+    Y = Y.astype(np.float32, copy=False)
+    codes = local_binary_pattern(Y, P=8, R=1, method='default')
+    # skimage renvoie float; cast en uint8 pour des codes [0..255]
+    return codes.astype(np.uint8)

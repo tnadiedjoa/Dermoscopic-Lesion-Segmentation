@@ -2,7 +2,7 @@
 """
 Script de test pour la méthode LBP Clustering
 Permet de tester et visualiser les résultats étape par étape
-Sauvegarde tous les résultats dans le dossier tests/
+Sauvegarde tous les résultats dans le dossier tests
 """
 
 import sys
@@ -10,13 +10,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
-
-# Créer le dossier tests s'il n'existe pas
-TEST_DIR = "segmentation/tests"
-os.makedirs(TEST_DIR, exist_ok=True)
-
-# Ajouter le répertoire segmentation au path
-sys.path.append('segmentation')
 
 # Importer toutes les fonctions de segmentation
 from segmentation import (
@@ -35,6 +28,9 @@ from segmentation import (
 
 # Importer skimage
 from skimage import io as skio
+
+# Configuration des répertoires
+TEST_DIR = 'tests'  # Répertoire pour sauvegarder les résultats (dans le même dossier)
 
 def adaptive_sigma(img_shape: tuple, base_sigma: float = 3.0, reference_size: int = 1000) -> float:
     """
@@ -267,9 +263,9 @@ def test_parameter_sensitivity():
     
     # Prendre seulement 3 images représentatives pour le test de paramètres
     test_images = [
-        "dataset/melanoma/ISIC_0000030.jpg",
-        "dataset/nevus/ISIC_0000000.jpg", 
-        "dataset/melanoma/ISIC_0000140.jpg"
+        "../dataset/melanoma/ISIC_0000030.jpg",
+        "../dataset/nevus/ISIC_0000000.jpg", 
+        "../dataset/melanoma/ISIC_0000140.jpg"
     ]
     
     # Test différents paramètres sigma
@@ -398,6 +394,10 @@ def test_parameter_sensitivity():
     plt.close()
     
     # Calculer et afficher les statistiques
+    if not results_by_image:
+        print("⚠️ Aucune image testée pour la sensibilité aux paramètres")
+        return 3.0, True  # Valeurs par défaut
+        
     if results_by_image:
         avg_results = np.mean(list(results_by_image.values()), axis=0)
         best_sigma_idx = np.argmax(avg_results)
@@ -427,7 +427,7 @@ def evaluate_full_dataset():
     print("=== ÉVALUATION COMPLÈTE DU DATASET ===")
     
     # Trouver toutes les images
-    image_paths = find_all_images("dataset")
+    image_paths = find_all_images("../dataset")
     print(f"Trouvé {len(image_paths)} images à traiter")
     
     results = []
@@ -512,6 +512,11 @@ def create_summary_plots(results: list):
     mean_dice = np.mean(dice_scores)
     ax.axhline(y=mean_dice, color='green', linestyle='--', 
                label=f'Moyenne: {mean_dice:.3f}')
+    
+    # Ligne de seuil de validation à 0.9
+    ax.axhline(y=0.9, color='red', linestyle='-', linewidth=2,
+               label='Seuil validation: 0.900')
+    
     ax.legend()
     
     # Colorier le fond selon la catégorie
@@ -524,37 +529,76 @@ def create_summary_plots(results: list):
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
     
-    # 2. Statistiques par catégorie
+    # 2. Graphique category_comparison - Simple avec moyennes et étendues
     melanoma_results = [r for r in results if r['category'] == 'melanoma']
     nevus_results = [r for r in results if r['category'] == 'nevus']
     
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    # Un seul graphique simple et clair
+    fig, ax = plt.subplots(figsize=(12, 8))
     
-    # Boîtes à moustaches par catégorie
+    # Calculer les données
     melanoma_dice = [r['metrics']['dice'] for r in melanoma_results]
     nevus_dice = [r['metrics']['dice'] for r in nevus_results]
     
-    axes[0].boxplot([melanoma_dice, nevus_dice], labels=['Melanoma', 'Nevus'])
-    axes[0].set_title('Distribution des scores Dice')
-    axes[0].set_ylabel('Score Dice')
-    axes[0].grid(True, alpha=0.3)
-    
-    # Comparaison des moyennes
-    categories_unique = ['Melanoma', 'Nevus']
+    categories = ['Melanoma', 'Nevus']
     means = [np.mean(melanoma_dice), np.mean(nevus_dice)]
-    stds = [np.std(melanoma_dice), np.std(nevus_dice)]
+    mins = [np.min(melanoma_dice), np.min(nevus_dice)]
+    maxs = [np.max(melanoma_dice), np.max(nevus_dice)]
     
-    bars = axes[1].bar(categories_unique, means, yerr=stds, capsize=5, 
-                       color=['red', 'blue'], alpha=0.7)
-    axes[1].set_title('Score Dice moyen par catégorie')
-    axes[1].set_ylabel('Score Dice moyen')
-    axes[1].grid(True, alpha=0.3)
+    # Position et couleurs (MÊMES que dice_summary)
+    x_pos = np.arange(len(categories))
+    colors = ['red', 'blue']  # Exactement comme dice_summary
     
-    # Ajouter les valeurs
-    for bar, mean, std in zip(bars, means, stds):
-        height = bar.get_height()
-        axes[1].text(bar.get_x() + bar.get_width()/2., height + std + 0.02,
-                    f'{mean:.3f}±{std:.3f}', ha='center', va='bottom')
+    # Barres pour les moyennes
+    bars = ax.bar(x_pos, means, color=colors, alpha=0.7, width=0.6)
+    
+    # Valeurs moyennes au-dessus des barres (bien espacées)
+    for i, (bar, mean) in enumerate(zip(bars, means)):
+        ax.text(bar.get_x() + bar.get_width()/2., mean + 0.02,
+                f'{mean:.3f}', ha='center', va='bottom', 
+                fontsize=14, fontweight='bold')
+    
+    # Étendue avec traits verticaux et valeurs min/max
+    for i, (minimum, maximum, color) in enumerate(zip(mins, maxs, colors)):
+        # Trait vertical pour l'étendue
+        ax.plot([i, i], [minimum, maximum], color='black', linewidth=3, alpha=0.8)
+        
+        # Point et valeur min (en bas, décalés pour éviter conflit)
+        ax.plot(i, minimum, 'o', color='black', markersize=8)
+        ax.text(i - 0.15, minimum - 0.03, f'Min: {minimum:.3f}', 
+                ha='center', va='top', fontsize=12, fontweight='bold',
+                bbox=dict(boxstyle="round,pad=0.2", facecolor='white', 
+                         edgecolor='black', alpha=0.9))
+        
+        # Point et valeur max (en haut, décalés pour éviter conflit)
+        ax.plot(i, maximum, 'o', color='black', markersize=8)
+        ax.text(i + 0.15, maximum + 0.03, f'Max: {maximum:.3f}', 
+                ha='center', va='bottom', fontsize=12, fontweight='bold',
+                bbox=dict(boxstyle="round,pad=0.2", facecolor='white', 
+                         edgecolor='black', alpha=0.9))
+    
+    # Seuil de validation à 0.9
+    ax.axhline(y=0.9, color='red', linestyle='-', linewidth=2,
+               label='Seuil validation: 0.900')
+    
+    # Mise en forme
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(categories, fontsize=14, fontweight='bold')
+    ax.set_ylabel('Score Dice', fontsize=14, fontweight='bold')
+    ax.set_title('Moyennes par catégorie avec étendue (Min-Max)', 
+                 fontsize=16, fontweight='bold')
+    ax.grid(True, alpha=0.3)
+    ax.set_ylim(0, 1.05)
+    ax.legend(fontsize=12)
+    
+    # Statistiques dans un coin
+    total_images = len(melanoma_dice) + len(nevus_dice)
+    validated_count = len([d for d in melanoma_dice + nevus_dice if d >= 0.9])
+    
+    stats_text = f'Total: {total_images} images\nValidées (≥0.9): {validated_count}'
+    ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, 
+            fontsize=12, fontweight='bold', va='top',
+            bbox=dict(boxstyle="round,pad=0.3", facecolor='lightgray', alpha=0.8))
     
     plt.tight_layout()
     save_path = os.path.join(TEST_DIR, 'category_comparison.png')
@@ -575,16 +619,12 @@ Affiche un résumé statistique des résultats
     print("RÉSUMÉ STATISTIQUE")
     print("="*60)
     
-    # Statistiques globales
+    # Statistiques globales - seulement Dice
     all_dice = [r['metrics']['dice'] for r in results]
-    all_jaccard = [r['metrics']['jaccard'] for r in results]
-    all_accuracy = [r['metrics']['accuracy'] for r in results]
     
     print(f"Nombre total d'images traitées: {len(results)}")
-    print(f"\nMÉTRIQUES GLOBALES:")
-    print(f"  Dice moyen     : {np.mean(all_dice):.4f} ± {np.std(all_dice):.4f}")
-    print(f"  Jaccard moyen  : {np.mean(all_jaccard):.4f} ± {np.std(all_jaccard):.4f}")
-    print(f"  Accuracy moyen : {np.mean(all_accuracy):.4f} ± {np.std(all_accuracy):.4f}")
+    print(f"\nMÉTRIQUE GLOBALE:")
+    print(f"  Dice moyen: {np.mean(all_dice):.4f} ± {np.std(all_dice):.4f}")
     
     # Statistiques par catégorie
     melanoma_results = [r for r in results if r['category'] == 'melanoma']

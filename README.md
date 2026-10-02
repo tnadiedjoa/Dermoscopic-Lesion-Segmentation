@@ -4,18 +4,25 @@
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://github.com/nadiedjoa-24/dermoscopic-lesion-segmentation/actions/workflows/ci.yml/badge.svg)](https://github.com/nadiedjoa-24/dermoscopic-lesion-segmentation/actions/workflows/ci.yml)
+[![Tests](https://github.com/tnadiedjoa/Dermoscopic-Lesion-Segmentation/actions/workflows/ci.yml/badge.svg)](https://github.com/tnadiedjoa/Dermoscopic-Lesion-Segmentation/actions/workflows/ci.yml)
 
 ![Comparison of the three methods against the ground truth](reports/figures/method_comparison.jpg)
 
-Three published segmentation methods, reimplemented from their papers and
-benchmarked head-to-head on twenty ISIC images against expert ground truth.
+Three unsupervised segmentation methods, benchmarked head-to-head on twenty ISIC
+images against expert ground truth: two reimplemented from their papers (LBP
+clustering, Statistical Region Merging) and one of our own design (multi-channel
+Otsu + Chan-Vese). Best result: LBP clustering, mean Dice 0.84, and 0.90 with the
+convex-hull post-processing (parameters tuned on the same twenty images, so
+optimistic).
+
+*Pair course project, Télécom Paris (2025), supervised by Pietro Gori.*
 
 ---
 
 ## Why classical computer vision
 
-A U-Net would score higher. That is not what this project is for.
+The course required classical image processing only, and that constraint suits
+the setting. A U-Net would score higher; that is not what this project is for.
 
 - **No training data required.** Every method here is unsupervised. It runs on
   twenty images; a segmentation network does not.
@@ -38,7 +45,8 @@ data/nevus/...
 ```
 
 Images are redistributed here for reproducibility under the terms of the ISIC
-Archive; the archive remains the authoritative source.
+Archive, which remains the authoritative source and lists each image's license.
+They are not covered by this repository's MIT license.
 
 ## Pipeline
 
@@ -60,7 +68,7 @@ blurs the border being sought. The detector has a known weakness, stated under
 
 | Method | Idea | Source |
 |---|---|---|
-| **Multi-channel Otsu** | Otsu's threshold on R, G and B independently, combined as `(R and G) or B`, then refined by a Chan-Vese active contour. | Garnavi et al. (2009) |
+| **Multi-channel Otsu** | Otsu's threshold on R, G and B independently, combined as `(R and G) or B`, then refined by a Chan-Vese active contour. | Own design (channel choice after Garnavi et al., 2009) |
 | **LBP Clustering** | LBP (P=8, R=1) marks textured pixels; the smoothed texture field is stacked with luminance into a pseudo-RGB `[L, Y, L]`, and the lesion cluster is picked in L\*a\*b\* by the *pinkness* score `max(a*,0) − min(b*,0)`. | Pereira et al. (2020) |
 | **Statistical Region Merging** | Union-find merging of neighbouring pixels ordered by intensity difference, under a bound that tightens as regions grow; lesion regions are then selected by darkness, centrality and saturation. | Celebi et al. (2008) |
 
@@ -117,8 +125,8 @@ and one report page per image in [`reports/segmentation_report.pdf`](reports/seg
 ## Installation
 
 ```bash
-git clone https://github.com/nadiedjoa-24/dermoscopic-lesion-segmentation.git
-cd dermoscopic-lesion-segmentation
+git clone https://github.com/tnadiedjoa/Dermoscopic-Lesion-Segmentation.git
+cd Dermoscopic-Lesion-Segmentation
 pip install -e .
 ```
 
@@ -140,9 +148,10 @@ python scripts/segment_image.py data/melanoma/ISIC_0000140.jpg
 LBP and SRM are seeded and reproduce exactly. Otsu's Chan-Vese refinement
 (`skimage.segmentation.morphological_chan_vese`) has a small run-to-run
 non-determinism of its own, unrelated to this codebase: it can flip a
-handful of boundary pixels between runs on the same input, moving its Dice
-score by up to about 0.0002. It never changes a number at the precision
-reported here.
+handful of boundary pixels between runs on the same input. On a single image
+this moves the Dice by up to about 0.004 (ISIC_0000030 with the hull: 0.7548 or
+0.7511); on the twenty-image means it is at most 0.0002, so the means reported
+here are unaffected while per-image values can move in the third decimal.
 
 ## Tests
 
@@ -151,41 +160,13 @@ pip install -e ".[dev]"
 pytest
 ```
 
-Forty-nine tests, in a few seconds, almost entirely on synthetic in-memory
-arrays: Otsu, SRM and the pipeline are only run on small synthetic images to
-check their contracts, and the real dataset is never touched. The exception is
-`data.py`'s four tests, which write and read back a handful of tiny synthetic
-files. They pin the parts that are heuristics rather than
-mathematics, because those are what break quietly:
-
-- **Dice** on its stated edge cases, including two empty masks scoring 1.0 and
-  the resize path taken when a downscaled prediction meets a full-size mask.
-- **Clipping to the valid area**, and the fact that a lesion covering most of
-  it comes through post-processing intact. An earlier inversion guard would
-  have flipped it into its complement; it was removed.
-- **The convex hull's satellite rule**: a speck in a corner must not stretch
-  the hull, and its reach cannot exceed the image regardless of the lesion's
-  or the satellite's own size.
-- **The LBP operator** against patterns built by hand, since it is written from
-  the paper and packs its bits clockwise from north. scikit-image starts
-  elsewhere and turns the other way, so its codes are not a usable reference.
-- **The hair-removal footprints**, both their geometry and that all four
-  orientations actually enter the pixelwise maximum.
-- **The hair-removal coverage gate**, which has to threshold the response into
-  hair/not-hair pixels before measuring the fraction of the valid area they cover,
-  not sum the raw intensity difference: that sum lives on a different scale
-  and barely tracks how much hair is actually present.
-- **Otsu's per-channel threshold and SRM's border-sampled skin reference**,
-  which ignore the whitened frame corners when given a valid mask, the same
-  way LBP's clustering already did, instead of letting that synthetic cluster
-  pull the statistic away from the real lesion/skin boundary. (The pipeline
-  passes that mask to Otsu but not to SRM; the notebook's section 7 says why.)
-- **Scoring on a framed image**: frame removal crops it, so the ground truth
-  must be cropped with the exact same box. The test scores a perfect mask on
-  a synthetic framed image and requires exactly 1.0, which the old resizing
-  failed.
-- **Colour smoothing** for the Felzenszwalb backend, which must blur each
-  channel on its own rather than mix red into blue.
+Forty-nine tests run in a few seconds, almost entirely on synthetic in-memory
+arrays (the real dataset is never touched). They pin the heuristic parts, which
+are what break quietly: the Dice edge cases, clipping to the valid area, the
+convex hull's satellite rule, the LBP operator against hand-built patterns, the
+hair-removal footprints and coverage gate, the frame-aware statistics of Otsu
+and SRM, and scoring on framed images. The notebook's section 7 lists the bugs
+these tests guard against.
 
 The narrative walkthrough is in
 [`notebooks/01_method_comparison.ipynb`](notebooks/01_method_comparison.ipynb),
@@ -201,7 +182,7 @@ sample = load_sample("data/melanoma/ISIC_0000140.jpg")
 outcome = run_all_methods(sample)
 
 print(outcome.scores)   # {'Otsu': 0.877, 'Otsu_Hull': 0.931, 'LBP': 0.895, ...}
-# Otsu's exact figure can differ by ~0.0002 from reports/per_image_results.csv:
+# Otsu's exact figure can differ by up to ~0.004 from reports/per_image_results.csv:
 # its Chan-Vese refinement has the small run-to-run non-determinism described
 # under "Reproducing the results" above. LBP and SRM are seeded and match exactly.
 print(outcome.masks["LBP"].shape)
@@ -254,15 +235,17 @@ Stated plainly, because they bound what these numbers mean:
   detector that tells hair from lesion texture is left as future work.
 - **Two lesions defeat all three methods.** ISIC_0000024 and ISIC_0000049
   score below 0.70 on their raw masks. The first is low-contrast; the second
-  is also the largest lesion in the set, and which of the two explains its
+  is also the lesion covering the largest share of its image (66 %), and which of the two explains its
   failure is not established. These are the cases where a learned model would
   most likely do better.
 
 ## References
 
-Full citations in [`docs/references.md`](docs/references.md). The methods come
-from Celebi et al. (2008), Pereira et al. (2020), Garnavi et al. (2009),
-Zortea et al. (2017) and Lee et al. (1997).
+Full citations in [`docs/references.md`](docs/references.md). SRM and LBP
+clustering follow Celebi et al. (2008) and Pereira et al. (2020); the Otsu
+variant takes its channel choice from Garnavi et al. (2009); the skin reference
+of the region-scoring step comes from Zortea et al. (2017) and hair removal from
+Lee et al. (1997).
 
 The full write-up is in [`docs/research_paper.pdf`](docs/research_paper.pdf):
 method derivations, the failure analysis, and per-image scores. Its tables are
@@ -271,8 +254,8 @@ typed by hand, so the report quotes the same numbers the benchmark produced.
 
 ## Authors
 
-Théophile Nadiedjoa ([@nadiedjoa-24](https://github.com/nadiedjoa-24)) and
+Théophile Nadiedjoa ([@tnadiedjoa](https://github.com/tnadiedjoa)) and
 Agshay Nadanakumar ([@agshayn](https://github.com/agshayn)), Télécom Paris,
-2025.
+2025. Course project supervised by Pietro Gori.
 
 Licensed under the [MIT License](LICENSE).

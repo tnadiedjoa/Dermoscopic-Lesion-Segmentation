@@ -243,7 +243,7 @@ def segment(
             ``WEIGHT_CONTRAST``/``WEIGHT_SATURATION``/``MIN_CONTRAST``/
             ``MIN_SATURATION_DIFF``/``SCORE_KEEP_RATIO`` above were all tuned
             against scores computed relative to that reference. Passing the
-            real, unbiased reference (around 0.42 / 0.06 instead) changes the
+            real, unbiased reference (0.42-0.86 / 0.06-0.08 instead) changes the
             scale those scores live on without retuning the thresholds that
             judge them, which measurably hurts Dice on the framed images in
             this dataset rather than helping it. Fixing the reference properly

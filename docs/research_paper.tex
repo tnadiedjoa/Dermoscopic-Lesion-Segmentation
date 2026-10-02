@@ -2,6 +2,7 @@
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{lmodern}
 \usepackage[english]{babel}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{graphicx}
@@ -45,8 +46,9 @@ raises every method further. We report where each method fails and why.
 
 \section*{Introduction}
 
-Melanoma is a major public health concern: in the United States alone, roughly
-40{,}000 to 50{,}000 diagnoses per year lead to about 10{,}000 deaths. Survival
+Melanoma is a major public health concern: in the United States alone, about
+105{,}000 invasive melanomas are expected to be diagnosed in 2025 and about
+8{,}400 people to die of the disease~\cite{siegel2025}. Survival
 depends strongly on how quickly the lesion is identified and treated, so any
 technological improvement in screening tools can reduce mortality.
 
@@ -104,7 +106,7 @@ centre, and proceeds as follows:
 
 \begin{enumerate}
   \item \textbf{Border analysis.} A preliminary inspection of a band covering
-  5\,\% of the image width gives the proportion of black pixels. If that
+  5\,\% of the image's shorter side gives the proportion of black pixels. If that
   proportion is low the image is considered frameless and left untouched.
   That matters, since cropping a frameless image would only destroy data.
   \item \textbf{Global thresholding and connected components.} The image is
@@ -185,8 +187,8 @@ The improved version works as follows:
   the blurred edges of thick hairs.
   \item \textbf{Interpolation and smoothing.} Masked areas are reconstructed by
   nearest-neighbour grid interpolation from the immediate neighbourhood, and a
-  final median filter with a $20 \times 20$ window blends the corrections into
-  the surrounding healthy skin.
+  final median filter with a $20 \times 20$ window, applied to the whole image,
+  blends the corrections in.
 \end{enumerate}
 
 A coverage test guards the whole stage: the dilated hair mask is eroded by a
@@ -204,8 +206,8 @@ The detector responds to any dark structure narrower than some of its
 elements, and the dark, textured interior of a lesion is such a structure.
 Five of the twenty images pass the coverage test. Two are genuinely hairy
 (\texttt{ISIC\_0000042} and \texttt{ISIC\_0000095}) and one has a few thin
-hairs (\texttt{ISIC\_0000146}). The other two (\texttt{ISIC\_0000140} and
-\texttt{ISIC\_0000142}) have no visible hair, and on them almost all of the
+hairs (\texttt{ISIC\_0000146}). Of the other two, \texttt{ISIC\_0000140} has
+only fine hairs and \texttt{ISIC\_0000142} none, and on them almost all of the
 flagged pixels lie inside the lesion: the stage then inpaints parts of the
 lesion itself, which produces the small coloured shards visible in
 Figure~\ref{fig:preprocessing}.
@@ -305,7 +307,8 @@ The key step is the binarisation on a \emph{subset} of patterns. Code $0$ (no
 neighbour brighter) and the eight powers of two (exactly one brighter neighbour)
 describe locally smooth neighbourhoods; every other code describes texture.
 Mapping the smooth subset to $0$ and all others to $1$ yields a texture map
-whose ones concentrate inside the lesion.
+that is mostly ones, slightly denser inside the lesion (93\,\% vs 90\,\% of
+pixels).
 
 \subsubsection{Pseudo-RGB construction and the pinkness criterion}
 
@@ -333,15 +336,17 @@ finishes the mask.
 \label{sec:lbp-frame}
 
 Applying the method as published to our cropped images failed completely on
-all three framed ones, with a raw Dice score of exactly zero. The cause is the interaction
+all three framed ones: the "lesion" it selected was the whole disc (raw Dice
+$0.62$ to $0.76$, and exactly zero with the inversion guard of
+Section~\ref{sec:four-guards}, since removed). The cause is the interaction
 announced in Section~\ref{sec:frame-removal}: frame removal whitens the corners, and a white pixel
 has $L = 0$ texture with $Y = 255$, so in the pseudo-RGB it becomes
 \emph{pure green}, an extreme point in the $(a^*, b^*)$ plane. Those synthetic
 pixels captured one of the two clusters outright, and $k$-means separated disc
 from corners instead of lesion from skin.
 
-Restricting the clustering to the valid disc area resolves it, and the three
-failing images rose from $0.000$ to $0.708$, $0.895$ and $0.906$. The lesson generalises
+Restricting the clustering to the valid disc area resolves it: the three
+images then score $0.708$, $0.895$ and $0.906$. The lesson generalises
 beyond this project: a preprocessing step that fabricates pixel values must
 publish which pixels it fabricated.
 
@@ -357,7 +362,7 @@ publish which pixels it fabricated.
 
 \subsection{Method 3: Statistical Region Merging}
 
-SRM~\cite{celebi} is a region-growing technique. Every pixel starts as its own
+SRM~\cite{nock,celebi} is a region-growing technique. Every pixel starts as its own
 region, and adjacent regions are merged iteratively when they are statistically
 similar.
 
@@ -373,7 +378,8 @@ neighbours merge first. Two regions $R_1$ and $R_2$ are merged when
 b(R) = \frac{g^2}{2Q\,|R|}\Bigl(\ln(1 + |R|) + 2\ln(6n)\Bigr),
 \]
 where $\overline{R}$ is the region mean, $|R|$ its size, $n$ the pixel count and
-$g = 1$ for intensities in $[0,1]$. The bound tightens as regions grow: early
+$g = 1$ for intensities in $[0,1]$ (a simplification of Nock and Nielsen's
+bound). The bound tightens as regions grow: early
 merges are cheap, late merges must be well supported. The scale parameter $Q$
 controls permissiveness, a smaller $Q$ yielding fewer, larger regions. Regions
 are maintained in a union-find structure with path compression and union by
@@ -636,7 +642,8 @@ These numbers should be read with their limits in mind.
   \item \textbf{Parameters were tuned on these same images.} There is no
   held-out set, so the reported scores are optimistic.
   \item \textbf{The hair detector also detects lesion texture.} On two
-  hairless images it inpaints parts of the lesion itself
+  images (one with fine hairs only, one hairless) it inpaints parts of the
+  lesion itself
   (Section~\ref{sec:hair-limits}), and the scores include that weakness.
   \item \textbf{A single ground truth per image.} Expert delineations vary
   between dermatologists, and the Dice ceiling attainable is bounded by that
@@ -707,6 +714,17 @@ M.~Zortea, E.~Flores and J.~Scharcanski.
 \newblock A simple weighted thresholding method for the segmentation of
 pigmented skin lesions in macroscopic images.
 \newblock \emph{Pattern Recognition}, 64:92--104, 2017.
+
+\bibitem{siegel2025}
+R.~L.~Siegel, T.~B.~Kratzer, A.~N.~Giaquinto, H.~Sung and A.~Jemal.
+\newblock Cancer statistics, 2025.
+\newblock \emph{CA: A Cancer Journal for Clinicians}, 75(1):10--45, 2025.
+
+\bibitem{nock}
+R.~Nock and F.~Nielsen.
+\newblock Statistical region merging.
+\newblock \emph{IEEE Transactions on Pattern Analysis and Machine
+Intelligence}, 26(11):1452--1458, 2004.
 
 \end{thebibliography}
 

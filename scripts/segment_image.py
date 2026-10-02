@@ -81,7 +81,7 @@ def main() -> None:
         )
     print("\nFigures written:")
     for path in written:
-        print(" -", path.relative_to(REPOSITORY_ROOT))
+        print(" -", path)
 
 
 if __name__ == "__main__":

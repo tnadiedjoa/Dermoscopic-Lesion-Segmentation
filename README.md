@@ -60,17 +60,19 @@ whitened and cropped.
 **Hair removal.** Following DullRazor, hairs are found by grayscale closing with
 elongated structuring elements, then inpainted from surrounding skin. A closing
 with an element wider than a hair erases it, so the difference reveals it.
-Images with little hair are left untouched, since inpainting a clean image only
-blurs the border being sought. The detector has a known weakness, stated under
+Images whose hair detections do not form large patches are left untouched,
+since inpainting a clean image only blurs the border being sought; this also
+skips thin, separated hairs (ISIC_0000019 is left as is). The detector has a
+known weakness, stated under
 [Limitations](#limitations): it also responds to a lesion's own dark texture.
 
 ### The three methods
 
 | Method | Idea | Source |
 |---|---|---|
-| **Multi-channel Otsu** | Otsu's threshold on R, G and B independently, combined as `(R and G) or B`, then refined by a Chan-Vese active contour. | Own design (channel choice after Garnavi et al., 2009) |
+| **Multi-channel Otsu** | Otsu's threshold on R, G and B independently, combined as `(R and G) or B`, then refined by a Chan-Vese active contour. | Own design (per-channel thresholding motivated by Garnavi et al., 2009) |
 | **LBP Clustering** | LBP (P=8, R=1) marks textured pixels; the smoothed texture field is stacked with luminance into a pseudo-RGB `[L, Y, L]`, and the lesion cluster is picked in L\*a\*b\* by the *pinkness* score `max(a*,0) − min(b*,0)`. | Pereira et al. (2020) |
-| **Statistical Region Merging** | Union-find merging of neighbouring pixels ordered by intensity difference, under a bound that tightens as regions grow; lesion regions are then selected by darkness, centrality and saturation. | Celebi et al. (2008) |
+| **Statistical Region Merging** | Union-find merging of neighbouring pixels ordered by intensity difference, under a bound that tightens as regions grow; lesion regions are then selected by darkness, centrality and saturation. | Nock & Nielsen (2004), as applied by Celebi et al. (2008); region selection: our own |
 
 Felzenszwalb's graph-based segmentation is also available as a faster
 over-segmentation backend. It is a **different algorithm** and is always
@@ -145,13 +147,14 @@ python scripts/run_benchmark.py
 python scripts/segment_image.py data/melanoma/ISIC_0000140.jpg
 ```
 
-LBP and SRM are seeded and reproduce exactly. Otsu's Chan-Vese refinement
+LBP (seeded) and SRM (deterministic) reproduce exactly. Otsu's Chan-Vese refinement
 (`skimage.segmentation.morphological_chan_vese`) has a small run-to-run
 non-determinism of its own, unrelated to this codebase: it can flip a
 handful of boundary pixels between runs on the same input. On a single image
 this moves the Dice by up to about 0.004 (ISIC_0000030 with the hull: 0.7548 or
-0.7511); on the twenty-image means it is at most 0.0002, so the means reported
-here are unaffected while per-image values can move in the third decimal.
+0.7511); on the twenty-image means it can reach about 0.0016 (0.0004 observed),
+so an Otsu mean can move by one unit in the third decimal; LBP and SRM means are
+exact.
 
 ## Tests
 
@@ -184,7 +187,8 @@ outcome = run_all_methods(sample)
 print(outcome.scores)   # {'Otsu': 0.877, 'Otsu_Hull': 0.931, 'LBP': 0.895, ...}
 # Otsu's exact figure can differ by up to ~0.004 from reports/per_image_results.csv:
 # its Chan-Vese refinement has the small run-to-run non-determinism described
-# under "Reproducing the results" above. LBP and SRM are seeded and match exactly.
+# under "Reproducing the results" above. LBP (seeded) and SRM (deterministic)
+# match exactly.
 print(outcome.masks["LBP"].shape)
 ```
 
@@ -228,22 +232,25 @@ Stated plainly, because they bound what these numbers mean:
   set, so the scores are optimistic.
 - **The hair detector also detects lesion texture.** It flags any dark
   structure narrower than its structuring elements, and the textured interior
-  of a lesion qualifies. On two hairless images (ISIC_0000140 and
-  ISIC_0000142) it passes the coverage gate on lesion texture alone and
-  inpaints parts of the lesion, which slightly lowers their scores and leaves
+  of a lesion qualifies. On ISIC_0000140 (fine hairs only) and the hairless
+  ISIC_0000142 it passes the coverage gate on lesion texture alone and
+  inpaints parts of the lesion, which changes their scores by up to about 0.02
+  (lower for LBP, higher for SRM on ISIC_0000142) and leaves
   the coloured shards visible in the figure at the top of this page. A
   detector that tells hair from lesion texture is left as future work.
 - **Two lesions defeat all three methods.** ISIC_0000024 and ISIC_0000049
   score below 0.70 on their raw masks. The first is low-contrast; the second
-  is also the lesion covering the largest share of its image (66 %), and which of the two explains its
+  is also the lesion covering the largest share of its image (66 %), and
+  whether its contrast or its size explains its
   failure is not established. These are the cases where a learned model would
   most likely do better.
 
 ## References
 
 Full citations in [`docs/references.md`](docs/references.md). SRM and LBP
-clustering follow Celebi et al. (2008) and Pereira et al. (2020); the Otsu
-variant takes its channel choice from Garnavi et al. (2009); the skin reference
+clustering follow Celebi et al. (2008) and Pereira et al. (2020); the
+per-channel thresholding of the Otsu variant is motivated by Garnavi et al.
+(2009); the skin reference
 of the region-scoring step comes from Zortea et al. (2017) and hair removal from
 Lee et al. (1997).
 

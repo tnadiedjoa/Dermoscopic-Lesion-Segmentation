@@ -1,6 +1,7 @@
 # References
 
-The papers below are the source of the methods implemented in this repository.
+The papers below are the source of, or the background for, the methods implemented
+in this repository.
 The PDFs are not redistributed here for copyright reasons; each entry links to
 the publisher's page.
 

@@ -36,10 +36,10 @@ clinical measurement (asymmetry, border irregularity, colour) is computed
 from that border. This report presents a segmentation pipeline built
 \emph{without} deep learning, under the explicit constraint of using classical
 image-processing techniques only. After a preprocessing stage removing the
-dermoscope frame and body hair, three segmentation methods are implemented from
-their source publications and compared on \nimages{} annotated dermoscopic
-images: multi-channel Otsu thresholding, LBP Clustering, and Statistical Region
-Merging. \bestmethod{} gives the best raw masks, and a shape-aware convex hull
+dermoscope frame and body hair, three segmentation methods are compared on
+\nimages{} annotated dermoscopic images: LBP Clustering and Statistical Region
+Merging, reimplemented from their source publications, and a multi-channel Otsu
+thresholding of our own design. \bestmethod{} gives the best raw masks, and a shape-aware convex hull
 raises every method further. We report where each method fails and why.
 \end{abstract}
 
@@ -602,7 +602,7 @@ explicit.
 
 Two images drag every method's raw mask below $0.70$. ISIC\_0000024 is a
 low-contrast lesion where neither an intensity nor a texture cue separates
-lesion from skin cleanly. ISIC\_0000049 is also the largest lesion in the set,
+lesion from skin cleanly. ISIC\_0000049 is also the lesion covering the largest share of its image (66\,\%),
 and every method captures only part of it; whether its contrast or its size
 is to blame (the centrality prior and the border-sampled skin reference both
 assume a lesion well inside the image) is not established here. The convex
@@ -647,7 +647,8 @@ These numbers should be read with their limits in mind.
 
 We implemented a complete skin-lesion segmentation pipeline using classical
 computer vision only, from artefact removal through to quantitative evaluation,
-and compared three methods reimplemented from their source publications.
+and compared three methods: two reimplemented from their source publications
+and a multi-channel Otsu baseline of our own design.
 
 The outcome contradicts our initial expectation. We had assumed the most
 sophisticated method, region merging, would dominate; it does not. The

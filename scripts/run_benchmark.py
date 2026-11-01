@@ -7,7 +7,7 @@ Usage::
 Outputs, all under ``reports/``:
 
 - ``per_image_results.csv``      one row per image, one column per method
-- ``segmentation_report.pdf``    one page per image, ground truth beside each mask
+- ``per_image_figures.pdf``      one page per image, ground truth beside each mask
 - ``figures/dice_per_image.pdf`` grouped bars, melanoma and nevus
 - ``figures/dice_summary.pdf``   mean Dice with min-max whiskers
 """
@@ -45,7 +45,7 @@ def run(data_root: Path, reports: Path) -> pd.DataFrame:
     figures.mkdir(parents=True, exist_ok=True)
 
     rows = []
-    report_pdf = reports / "segmentation_report.pdf"
+    report_pdf = reports / "per_image_figures.pdf"
     started = time.time()
 
     with PdfPages(report_pdf) as pdf:

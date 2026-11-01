@@ -103,7 +103,7 @@ Per category:
 | Statistical Region Merging | 0.790 | 0.849 | 0.850 | 0.888 |
 
 Per-image scores are in [`reports/per_image_results.csv`](reports/per_image_results.csv),
-and one report page per image in [`reports/segmentation_report.pdf`](reports/segmentation_report.pdf).
+and one page of figures per image in [`reports/per_image_figures.pdf`](reports/per_image_figures.pdf).
 
 **What the numbers say.**
 

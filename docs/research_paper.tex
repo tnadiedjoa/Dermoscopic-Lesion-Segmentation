@@ -11,6 +11,8 @@
 \usepackage{caption}
 \usepackage{float}
 \usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={Skin Lesion Segmentation in Dermoscopic Images},
+  pdfauthor={Théophile Nadiedjoa, Agshay Nadanakumar}}
 
 \graphicspath{{../reports/figures/}}
 
@@ -20,8 +22,9 @@
 
 \title{\textbf{Skin Lesion Segmentation in Dermoscopic Images}\\[0.3em]
 \large A comparison of three classical computer-vision methods}
-\author{NADIEDJOA Théophile \and NADANAKUMAR Agshay}
-\date{Supervised by GORI Pietro, Télécom Paris\\[0.5em]
+\author{Théophile Nadiedjoa \qquad Agshay Nadanakumar\\[0.3em]
+\normalsize Télécom Paris, Institut Polytechnique de Paris}
+\date{Supervised by Pietro Gori\\[0.5em]
 Revised \today}
 
 \begin{document}
@@ -44,7 +47,7 @@ thresholding of our own design. \bestmethod{} gives the best raw masks, and a sh
 raises every method further. We report where each method fails and why.
 \end{abstract}
 
-\section*{Introduction}
+\section{Introduction}
 
 Melanoma is a major public health concern: in the United States alone, about
 105{,}000 invasive melanomas are expected to be diagnosed in 2025 and about
@@ -650,7 +653,7 @@ These numbers should be read with their limits in mind.
   variability, which we cannot measure with one annotation.
 \end{itemize}
 
-\section*{Conclusion}
+\section{Conclusion}
 
 We implemented a complete skin-lesion segmentation pipeline using classical
 computer vision only, from artefact removal through to quantitative evaluation,

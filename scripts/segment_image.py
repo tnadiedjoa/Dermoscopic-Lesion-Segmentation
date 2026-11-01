@@ -3,7 +3,7 @@
 Usage::
 
     python scripts/segment_image.py data/melanoma/ISIC_0000030.jpg
-    python scripts/segment_image.py data/nevus/ISIC_0000008.jpg --out reports/figures
+    python scripts/segment_image.py data/nevus/ISIC_0000008.jpg --out report/figures
 """
 
 from __future__ import annotations

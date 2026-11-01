@@ -4,12 +4,12 @@ Usage::
 
     python scripts/run_benchmark.py
 
-Outputs, all under ``reports/``:
+Outputs:
 
-- ``per_image_results.csv``      one row per image, one column per method
-- ``per_image_figures.pdf``      one page per image, ground truth beside each mask
-- ``figures/dice_per_image.pdf`` grouped bars, melanoma and nevus
-- ``figures/dice_summary.pdf``   mean Dice with min-max whiskers
+- ``results/per_image_results.csv``      one row per image, one column per method
+- ``results/per_image_figures.pdf``      one page per image, ground truth beside each mask
+- ``report/figures/dice_per_image.pdf``  grouped bars, melanoma and nevus
+- ``report/figures/dice_summary.pdf``    mean Dice with min-max whiskers
 """
 
 from __future__ import annotations
@@ -34,18 +34,16 @@ from dermoseg.data import DATA_ROOT, iter_samples  # noqa: E402
 from dermoseg.pipeline import METHODS, run_all_methods  # noqa: E402
 from dermoseg.visualization import plot_comparison, plot_dice_per_image, plot_summary_stats  # noqa: E402
 
-REPORTS = REPOSITORY_ROOT / "reports"
-FIGURES = REPORTS / "figures"
+RESULTS = REPOSITORY_ROOT / "results"
+FIGURES = REPOSITORY_ROOT / "report" / "figures"
 
 
-def run(data_root: Path, reports: Path) -> pd.DataFrame:
+def run(data_root: Path, results: Path) -> pd.DataFrame:
     """Segment every sample, write the per-image PDF, return the results table."""
-    figures = reports / "figures"
-    reports.mkdir(parents=True, exist_ok=True)
-    figures.mkdir(parents=True, exist_ok=True)
+    results.mkdir(parents=True, exist_ok=True)
 
     rows = []
-    report_pdf = reports / "per_image_figures.pdf"
+    report_pdf = results / "per_image_figures.pdf"
     started = time.time()
 
     with PdfPages(report_pdf) as pdf:
@@ -68,13 +66,14 @@ def run(data_root: Path, reports: Path) -> pd.DataFrame:
             print(f"[{index:2d}] {sample.name:<20} {summary}")
 
     frame = pd.DataFrame(rows)
-    frame.to_csv(reports / "per_image_results.csv", index=False)
+    frame.to_csv(results / "per_image_results.csv", index=False)
     print(f"\nProcessed {len(frame)} images in {time.time() - started:.0f}s -> {report_pdf}")
     return frame
 
 
 def plot_results(frame: pd.DataFrame, figures: Path) -> None:
     """Write the per-image and summary Dice figures."""
+    figures.mkdir(parents=True, exist_ok=True)
     melanoma = frame[frame["Category"] == "melanoma"]
     nevus = frame[frame["Category"] == "nevus"]
 
@@ -107,11 +106,12 @@ def print_summary(frame: pd.DataFrame) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=DATA_ROOT, help="Dataset root folder.")
-    parser.add_argument("--reports", type=Path, default=REPORTS, help="Output folder.")
+    parser.add_argument("--results", type=Path, default=RESULTS, help="Output folder of the CSV and per-image PDF.")
+    parser.add_argument("--figures", type=Path, default=FIGURES, help="Output folder of the Dice figures.")
     arguments = parser.parse_args()
 
-    frame = run(arguments.data, arguments.reports)
-    plot_results(frame, arguments.reports / "figures")
+    frame = run(arguments.data, arguments.results)
+    plot_results(frame, arguments.figures)
     print_summary(frame)
 
 

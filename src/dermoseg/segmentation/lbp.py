@@ -12,7 +12,7 @@ continuous field L, stacked with the luminance Y as a pseudo-RGB image
 of that synthetic image separates lesion from skin, and the *pinkness* score
 ``max(a*, 0) - min(b*, 0)`` picks the lesion cluster without supervision.
 
-See ``docs/references.md``.
+See ``report/references.md``.
 """
 
 from __future__ import annotations

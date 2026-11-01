@@ -13,17 +13,17 @@ venv/
 Thumbs.db
 
 # Local-only exports of the executed notebook (kept out of the repo for size).
-# HTML:  python -m nbconvert --to html --embed-images --output-dir docs \
+# HTML:  python -m nbconvert --to html --embed-images --output-dir report \
 #            --output notebook_export notebooks/01_method_comparison.ipynb
 # PDF:   same with --to pdf (needs pandoc and a LaTeX install)
-docs/notebook_export.pdf
-docs/notebook_export.html
+report/notebook_export.pdf
+report/notebook_export.html
 
-# LaTeX build artefacts for docs/research_paper.pdf. The source, the table
+# LaTeX build artefacts for report/report.pdf. The source, the table
 # generator and the generated tables are tracked, so the PDF can be rebuilt
 # straight from the repo:
-#   python docs/make_results_table.py
-#   cd docs && pdflatex research_paper.tex
-docs/*.aux
-docs/*.log
-docs/*.out
+#   python report/make_results_table.py
+#   cd report && pdflatex report.tex
+report/*.aux
+report/*.log
+report/*.out

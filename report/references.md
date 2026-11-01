@@ -65,4 +65,4 @@ Reviewed but not implemented.
 
 ## Project report
 
-`research_paper.pdf` in this folder is the course report, revised in 2026 after a code audit.
+`report.pdf` in this folder is the course report, revised in 2026 after a code audit.

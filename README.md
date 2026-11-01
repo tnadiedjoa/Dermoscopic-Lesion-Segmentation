@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Tests](https://github.com/tnadiedjoa/Dermoscopic-Lesion-Segmentation/actions/workflows/ci.yml/badge.svg)](https://github.com/tnadiedjoa/Dermoscopic-Lesion-Segmentation/actions/workflows/ci.yml)
 
-![Comparison of the three methods against the ground truth](reports/figures/method_comparison.jpg)
+![Comparison of the three methods against the ground truth](report/figures/method_comparison.jpg)
 
 Three unsupervised segmentation methods, benchmarked head-to-head on twenty ISIC
 images against expert ground truth: two reimplemented from their papers (LBP
@@ -102,8 +102,8 @@ Per category:
 | LBP Clustering | 0.842 | 0.895 | 0.841 | 0.908 |
 | Statistical Region Merging | 0.790 | 0.849 | 0.850 | 0.888 |
 
-Per-image scores are in [`reports/per_image_results.csv`](reports/per_image_results.csv),
-and one page of figures per image in [`reports/per_image_figures.pdf`](reports/per_image_figures.pdf).
+Per-image scores are in [`results/per_image_results.csv`](results/per_image_results.csv),
+and one page of figures per image in [`results/per_image_figures.pdf`](results/per_image_figures.pdf).
 
 **What the numbers say.**
 
@@ -185,7 +185,7 @@ sample = load_sample("data/melanoma/ISIC_0000140.jpg")
 outcome = run_all_methods(sample)
 
 print(outcome.scores)   # {'Otsu': 0.877, 'Otsu_Hull': 0.931, 'LBP': 0.895, ...}
-# Otsu's exact figure can differ by up to ~0.004 from reports/per_image_results.csv:
+# Otsu's exact figure can differ by up to ~0.004 from results/per_image_results.csv:
 # its Chan-Vese refinement has the small run-to-run non-determinism described
 # under "Reproducing the results" above. LBP (seeded) and SRM (deterministic)
 # match exactly.
@@ -213,8 +213,8 @@ tests/       49 unit tests on the metric, the guards, the LBP operator,
 scripts/     run_benchmark.py, segment_image.py
 notebooks/   01_method_comparison.ipynb
 data/        20 ISIC images with ground-truth masks
-reports/     benchmark outputs and figures
-docs/        research_paper.pdf (+ LaTeX source and table generator), references.md
+results/     benchmark outputs: per-image scores (CSV) and per-image figures (PDF)
+report/      report.pdf (+ LaTeX source, figures, table generator), references.md
 pyproject.toml
 ```
 
@@ -247,16 +247,16 @@ Stated plainly, because they bound what these numbers mean:
 
 ## References
 
-Full citations in [`docs/references.md`](docs/references.md). SRM and LBP
+Full citations in [`report/references.md`](report/references.md). SRM and LBP
 clustering follow Celebi et al. (2008) and Pereira et al. (2020); the
 per-channel thresholding of the Otsu variant is motivated by Garnavi et al.
 (2009); the skin reference
 of the region-scoring step comes from Zortea et al. (2017) and hair removal from
 Lee et al. (1997).
 
-The full write-up is in [`docs/research_paper.pdf`](docs/research_paper.pdf):
+The full write-up is in [`report/report.pdf`](report/report.pdf):
 method derivations, the failure analysis, and per-image scores. Its tables are
-written out of `reports/per_image_results.csv` by a generator script rather than
+written out of `results/per_image_results.csv` by a generator script rather than
 typed by hand, so the report quotes the same numbers the benchmark produced.
 
 ## Authors

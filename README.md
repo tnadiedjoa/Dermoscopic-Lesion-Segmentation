@@ -136,7 +136,7 @@ That installs `dermoseg` with its dependencies, so the package imports from
 anywhere. The scripts and the notebook also add `src/` to the path
 themselves, so they run from a bare clone either way.
 
-## Reproducing the results
+## Reproducing
 
 ```bash
 # Full benchmark: CSV, per-image PDF report and summary figures
@@ -187,12 +187,12 @@ outcome = run_all_methods(sample)
 print(outcome.scores)   # {'Otsu': 0.877, 'Otsu_Hull': 0.931, 'LBP': 0.895, ...}
 # Otsu's exact figure can differ by up to ~0.004 from results/per_image_results.csv:
 # its Chan-Vese refinement has the small run-to-run non-determinism described
-# under "Reproducing the results" above. LBP (seeded) and SRM (deterministic)
+# under "Reproducing" above. LBP (seeded) and SRM (deterministic)
 # match exactly.
 print(outcome.masks["LBP"].shape)
 ```
 
-## Project structure
+## Repository structure
 
 ```
 src/dermoseg/
@@ -265,4 +265,6 @@ Théophile Nadiedjoa ([@tnadiedjoa](https://github.com/tnadiedjoa)) and
 Agshay Nadanakumar ([@agshayn](https://github.com/agshayn)), Télécom Paris,
 2025. Course project supervised by Pietro Gori.
 
-Licensed under the [MIT License](LICENSE).
+## License
+
+The code is released under the [MIT License](LICENSE).

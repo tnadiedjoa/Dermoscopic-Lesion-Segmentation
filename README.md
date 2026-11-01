@@ -2,9 +2,7 @@
 
 **Classical computer vision, no deep learning, for delineating skin lesions in dermoscopic images.**
 
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://github.com/tnadiedjoa/Dermoscopic-Lesion-Segmentation/actions/workflows/ci.yml/badge.svg)](https://github.com/tnadiedjoa/Dermoscopic-Lesion-Segmentation/actions/workflows/ci.yml)
+[![tests](https://github.com/tnadiedjoa/Dermoscopic-Lesion-Segmentation/actions/workflows/ci.yml/badge.svg)](https://github.com/tnadiedjoa/Dermoscopic-Lesion-Segmentation/actions/workflows/ci.yml)
 
 ![Comparison of the three methods against the ground truth](report/figures/method_comparison.jpg)
 
